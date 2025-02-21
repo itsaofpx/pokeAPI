@@ -6,27 +6,34 @@ import Image from "next/image";
 
 function PokeResult() {
   const params = useParams();
-
-  const [pokeData, setPokeData] = useState([]);
+  const [pokeData, setPokeData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchPokeData = async () => {
+    if (!params.pokeName) return;
+
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const response = await fetch(
         `https://pokeapi.co/api/v2/pokemon/${params.pokeName}`
       );
+
+      if (!response.ok) throw new Error("Pokémon not found!");
+
       const data = await response.json();
       setPokeData(data);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      setError(error.message);
     }
-    setLoading(false)
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchPokeData();
-  }, []);
+  }, [params.pokeName]);
 
   return (
     <div className="p-24">
@@ -37,11 +44,13 @@ function PokeResult() {
         <div className="shadow-md p-10 rounded-md bg-gray-50 border border-indigo-200">
           {loading ? (
             <p>Loading...</p>
-          ) : (
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : pokeData ? (
             <>
               <h3 className="text-3xl capitalize">{pokeData.name}</h3>
               <Image
-                src={pokeData.sprites?.front_shiny}
+                src={pokeData.sprites?.front_default || "/fallback.png"}
                 width={300}
                 height={300}
                 alt={pokeData.name}
@@ -73,6 +82,8 @@ function PokeResult() {
                 </p>
               </div>
             </>
+          ) : (
+            <p>No Pokémon data available.</p>
           )}
         </div>
       </div>
